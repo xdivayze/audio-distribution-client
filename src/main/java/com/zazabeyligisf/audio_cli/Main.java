@@ -11,11 +11,12 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Base64;
+
+//TODO ADD COMMANDS TO PULL TRACKS
 
 public class Main {
     static String url = "http://localhost:8080/api/v1/upload";
