@@ -1,52 +1,44 @@
 package com.zazabeyligisf.audio_cli;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
-import org.apache.http.HttpEntity;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.ContentType;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.util.EntityUtils;
-
+import javax.sound.sampled.LineUnavailableException;
+import javax.sound.sampled.UnsupportedAudioFileException;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.Base64;
-
-//TODO ADD COMMANDS TO PULL TRACKS
+import java.net.URISyntaxException;
+import java.nio.file.Path;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Optional;
 
 public class Main {
-    static String url = "http://localhost:8080/api/v1/upload";
-    public static void main(String[] args) throws IOException {
-        Gson gson = new Gson();
+    static String url = "http://localhost:8080/api/v1/";
+    static Service service = new Service();
 
-        byte[] bytes = Files.readAllBytes(Paths.get(args[3]));
-        String fileb64 = Base64.getEncoder().encodeToString(bytes);
+    public static void main(String[] args) throws IOException, URISyntaxException, UnsupportedAudioFileException, LineUnavailableException {
+        LinkedList<String> argsList = new LinkedList<>(List.of(args));
+        switch (args[0]) {
+            case "--upload" -> {
 
-        TitleLegal titleLegal = TitleLegal.builder()
-                .name(args[0])
-                .owner(args[1])
-                .additions(args[2])
-                .build();
+                if (!argsList.contains("--name") || !argsList.contains("--owner") || !argsList.contains("--path")) {
+                    throw new RuntimeException("required entries not included");
+                } else if (argsList.get(argsList.indexOf("--name") + 1).isBlank() || argsList.get(argsList.indexOf("--path") + 1).isBlank()) {
+                    throw new RuntimeException("name not included");
+                } else if (!argsList.contains("--additions")) {
+                    argsList.addLast("--additions");
+                    argsList.addLast("");
+                }
+                service.pushAudio(argsList.get(argsList.indexOf("--name") + 1),
+                        Optional.ofNullable(argsList.get(argsList.indexOf("--owner") + 1)),
+                        Optional.ofNullable(argsList.get(argsList.indexOf("--additions") + 1)),
+                        Path.of(argsList.get(argsList.indexOf("--path") + 1)));
+                System.out.println(argsList);
+                System.out.println(argsList.get(argsList.indexOf("--name") + 1) +
+                        Optional.ofNullable(argsList.get(argsList.indexOf("--owner") + 1)) +
+                        Optional.ofNullable(argsList.get(argsList.indexOf("--additions") + 1)) +
+                        Path.of(argsList.get(argsList.indexOf("--path") + 1)));
+            }
+            case "--list" -> System.out.println(service.list(argsList.get(argsList.indexOf("--list") + 1)).toString());
 
-        JsonObject payload = new JsonObject();
-        payload.addProperty("name", titleLegal.name());
-        payload.addProperty("owner", titleLegal.owner());
-        payload.addProperty("additions", titleLegal.additions());
-        payload.addProperty("mp3file", fileb64);
-
-        CloseableHttpClient client = HttpClients.createDefault();
-        HttpPost post = new HttpPost(url);
-
-        StringEntity jsonO = new StringEntity(payload.toString(), ContentType.APPLICATION_JSON);
-        post.setEntity(jsonO);
-
-        CloseableHttpResponse response = client.execute(post);
-        HttpEntity responseEntity  = response.getEntity();
-        System.out.println(EntityUtils.toString(responseEntity));
-
+            case "--play" -> service.playMusic(argsList.get(argsList.indexOf("--play") + 1));
+        }
     }
 }
